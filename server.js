@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import axios from "axios";
 import crypto from "crypto";
+import querystring from "node:querystring"; 
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -16,6 +17,10 @@ app.get("/", (req, res) => {
   res.send("Backend Audiciones funcionando correctamente 🚀");
 });
 
+import axios from "axios";
+import crypto from "crypto";
+import querystring from "node:querystring";
+
 app.post("/create-payment", async (req, res) => {
   try {
     const { amount, email } = req.body;
@@ -24,50 +29,61 @@ app.post("/create-payment", async (req, res) => {
     const secretKey = process.env.FLOW_SECRET_KEY;
     const baseUrl = process.env.FLOW_BASE_URL;
 
+    if (!apiKey || !secretKey || !baseUrl) {
+      return res.status(500).json({
+        error: "Faltan variables de entorno en el backend (FLOW_API_KEY / FLOW_SECRET_KEY / FLOW_BASE_URL).",
+      });
+    }
+
     const commerceOrder = `orden_${Date.now()}`;
     const subject = "Pago Audición Bailarines del Mañana";
     const currency = "CLP";
-    const urlConfirmation = "https://bailarines-del-manana-backend.onrender.com/confirm-payment";
-    const urlReturn = "https://bailarines-del-manana.onrender.com/pago-exitoso";
+
+    const urlConfirmation =
+      "https://bailarines-del-manana-backend.onrender.com/confirm-payment";
+
+    const urlReturn =
+      "https://bailarines-del-manana.onrender.com/pago-exitoso";
+
+    // ✅ params requeridos por Flow
     const params = {
       apiKey,
       commerceOrder,
       subject,
       currency,
-      amount,
+      amount: Number(amount), // asegurar número
       email,
       urlConfirmation,
-      urlReturn
+      urlReturn,
     };
 
-    const sortedParams = Object.keys(params)
-      .sort()
-      .map(key => `${key}=${params[key]}`)
-      .join("&");
+    // ✅ Firma correcta: ordenar keys y concatenar key + value (sin =, sin &)
+    const keys = Object.keys(params).sort();
+    let toSign = "";
+    for (const key of keys) {
+      toSign += key + String(params[key]);
+    }
 
     const signature = crypto
       .createHmac("sha256", secretKey)
-      .update(sortedParams)
+      .update(toSign)
       .digest("hex");
 
-    const response = await axios.post(`${baseUrl}/payment/create`, {
+    // ✅ Body urlencoded
+    const body = querystring.stringify({
       ...params,
-      s: signature
+      s: signature,
     });
 
-    res.json(response.data);
+    const response = await axios.post(`${baseUrl}/payment/create`, body, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
 
+    // Flow responde JSON con { url, token, flowOrder }
+    return res.json(response.data);
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: "Error creando pago" });
+    const details = error.response?.data || error.message;
+    console.error("FLOW ERROR:", details);
+    return res.status(500).json({ error: "Error creando pago", details });
   }
-});
-
-app.post("/confirm-payment", (req, res) => {
-  console.log("Confirmación recibida de Flow:", req.body);
-  res.status(200).send("OK");
-});
-
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
