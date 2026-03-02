@@ -5,7 +5,7 @@ import express from "express";
 import cors from "cors";
 import axios from "axios";
 import crypto from "crypto";
-import querystring from "node:querystring"; 
+import querystring from "querystring"; 
 
 const app = express();
 const PORT = process.env.PORT || 4000;
