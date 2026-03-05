@@ -106,7 +106,7 @@ const subject = eventDate
       "https://bailarines-del-manana-backend.onrender.com/confirm-payment";
 
     const urlReturn =
-      "https://bailarines-del-manana.onrender.com/pago-exitoso";
+  "https://bailarines-del-manana-backend.onrender.com/return";
        
       // 1) Guardar PENDIENTE en Sheets
     await axios.post(appsScriptUrl, {
@@ -221,6 +221,12 @@ app.post("/confirm-payment", async (req, res) => {
     console.error("confirm error:", err.response?.data || err.message);
     return res.status(200).send("OK");
   }
+});
+
+app.all("/return", (req, res) => {
+  return res.redirect(
+    "https://bailarines-del-manana.onrender.com/pago-exitoso"
+  );
 });
 
 // ✅ Importante para Render: bind al puerto asignado
