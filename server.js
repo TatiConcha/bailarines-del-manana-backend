@@ -27,7 +27,18 @@ app.get("/", (_req, res) => {
 // Crear pago (Flow)
 app.post("/create-payment", async (req, res) => {
   try {
-    const { amount, email, nombre, phone, city, activity, category } = req.body;
+    const {
+  amount,
+  email,
+  nombre,
+  phone,
+  city,
+  activity,
+  category,
+  birthDate = "",
+  school = "",
+  experience = "",
+} = req.body;
 
   
     const apiKey = process.env.FLOW_API_KEY;
@@ -112,6 +123,7 @@ const subject = eventDate
       school: school || "",
       experience: experience || "",
     });
+    
     // 2) Crear pago en Flow
     const params = {
       apiKey,
