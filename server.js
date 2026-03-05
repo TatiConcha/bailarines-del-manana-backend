@@ -72,7 +72,7 @@ const EVENT_DATES = {
   concon: {
     audicion: "11 abril 2026",
     clase: "11 abril 2026",
-    ambas: "11-19 abril 2026",
+    ambas: "11 abril 2026",
   },
 };
 
@@ -82,7 +82,7 @@ const eventDate = EVENT_DATES?.[cityKey]?.[activityKey] || "";
 // ✅ Base del texto según actividad
 let subjectBase = "Inscripción Bailarines del Mañana";
 if (activityKey === "audicion") subjectBase = "Inscripción Audición - Bailarines del Mañana";
-if (activityKey === "clase") subjectBase = "Clase Magistral Sebastián Vinet - Bailarines del Mañana";
+if (activityKey === "clase") subjectBase = "Clase Magistral Sebastián Vinet ";
 if (activityKey === "ambas") subjectBase = "Audición + Clase Magistral - Bailarines del Mañana";
 
 // ✅ Subject final que verá el cliente en Flow
@@ -107,6 +107,10 @@ const subject = eventDate
       actividad: activity || "",
       categoria: category || "",
       monto: Number(amount),
+      phone: phone || "",
+      birthDate: birthDate || "",
+      school: school || "",
+      experience: experience || "",
     });
     // 2) Crear pago en Flow
     const params = {
