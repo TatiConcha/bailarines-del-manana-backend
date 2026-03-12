@@ -62,6 +62,28 @@ app.post("/create-payment", async (req, res) => {
       return res.status(400).json({ error: "Faltan datos (amount, email)." });
     }
 
+        // 0) Verificar cupos antes de guardar y antes de crear el pago
+    const capacityCheck = await axios.post(appsScriptUrl, {
+      action: "check_capacity",
+      ciudad: city || "",
+      actividad: activity || "",
+      categoria: category || "",
+    });
+
+    const cap = capacityCheck.data;
+
+    if (!cap || cap.status !== "ok") {
+      return res.status(500).json({
+        error: "No se pudo verificar cupos.",
+      });
+    }
+
+    if (!cap.disponible) {
+      return res.status(400).json({
+        error: "Lo sentimos, los cupos para esta actividad ya están completos.",
+      });
+    }
+
     const commerceOrder = `BDM_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
      // ✅ Ciudad (viene desde el frontend como "santiago" o "concon")
 const cityKey = String(city || "").toLowerCase();
