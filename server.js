@@ -71,7 +71,8 @@ app.post("/create-payment", async (req, res) => {
     });
 
     const cap = capacityCheck.data;
-
+    console.log("CAPACITY CHECK RESPONSE:", capacityCheck.data);
+    
     if (!cap || cap.status !== "ok") {
       return res.status(500).json({
         error: "No se pudo verificar cupos.",
