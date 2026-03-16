@@ -24,6 +24,124 @@ app.get("/", (_req, res) => {
   res.send("Backend Audiciones funcionando correctamente 🚀");
 });
 
+const MAX_CUPOS = {
+  clase: 22,
+  junior: 22,
+  senior: 22,
+};
+
+const normalizeCity = (city) => {
+  const c = String(city || "")
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (c === "santiago") return "santiago";
+  if (c === "concon") return "concon";
+  return "";
+};
+
+const normalizeActivity = (activity) => {
+  const a = String(activity || "").toLowerCase().trim();
+  if (a === "clase") return "clase";
+  if (a === "audicion") return "audicion";
+  if (a === "ambas") return "ambas";
+  return "";
+};
+
+const normalizeCategory = (category) => {
+  const c = String(category || "").toLowerCase().trim();
+  if (c === "junior") return "junior";
+  if (c === "senior") return "senior";
+  return "";
+};
+
+async function getCuposFromSheets() {
+  const appsScriptUrl = process.env.APPS_SCRIPT_URL;
+
+  if (!appsScriptUrl) {
+    throw new Error("Falta APPS_SCRIPT_URL en Render.");
+  }
+
+  const response = await axios.get(`${appsScriptUrl}?action=cupos`);
+  return response.data;
+}
+
+function validateAvailability({ cupos, city, activity, category }) {
+  const cityKey = normalizeCity(city);
+  const activityKey = normalizeActivity(activity);
+  const categoryKey = normalizeCategory(category);
+
+  if (!cityKey) {
+    return "Ciudad inválida.";
+  }
+
+  if (!activityKey) {
+    return "Actividad inválida.";
+  }
+
+  if (!cupos || !cupos[cityKey]) {
+    return "No se pudieron consultar los cupos.";
+  }
+
+  const ocupadosClase = Number(cupos[cityKey].clase || 0);
+  const ocupadosJunior = Number(cupos[cityKey].junior || 0);
+  const ocupadosSenior = Number(cupos[cityKey].senior || 0);
+
+  if (activityKey === "clase") {
+    if (ocupadosClase >= MAX_CUPOS.clase) {
+      return "No quedan cupos para la clase magistral en esta ciudad.";
+    }
+  }
+
+  if (activityKey === "audicion") {
+    if (!categoryKey) {
+      return "Falta la categoría de audición.";
+    }
+
+    if (categoryKey === "junior" && ocupadosJunior >= MAX_CUPOS.junior) {
+      return "No quedan cupos para audición junior en esta ciudad.";
+    }
+
+    if (categoryKey === "senior" && ocupadosSenior >= MAX_CUPOS.senior) {
+      return "No quedan cupos para audición senior en esta ciudad.";
+    }
+  }
+
+  if (activityKey === "ambas") {
+    if (ocupadosClase >= MAX_CUPOS.clase) {
+      return "No quedan cupos para la clase magistral en esta ciudad.";
+    }
+
+    if (!categoryKey) {
+      return "Falta la categoría de audición.";
+    }
+
+    if (categoryKey === "junior" && ocupadosJunior >= MAX_CUPOS.junior) {
+      return "No quedan cupos para audición junior en esta ciudad.";
+    }
+
+    if (categoryKey === "senior" && ocupadosSenior >= MAX_CUPOS.senior) {
+      return "No quedan cupos para audición senior en esta ciudad.";
+    }
+  }
+
+  return null;
+}
+
+app.get("/cupos", async (_req, res) => {
+  try {
+    const cupos = await getCuposFromSheets();
+    return res.json(cupos);
+  } catch (error) {
+    console.error("Error obteniendo cupos:", error.response?.data || error.message);
+    return res.status(500).json({
+      error: "No se pudieron obtener los cupos",
+    });
+  }
+});
+
 // Crear pago (Flow)
 app.post("/create-payment", async (req, res) => {
   try {
@@ -62,6 +180,17 @@ app.post("/create-payment", async (req, res) => {
       return res.status(400).json({ error: "Faltan datos (amount, email)." });
     }
 
+          const cupos = await getCuposFromSheets();
+    const availabilityError = validateAvailability({
+      cupos,
+      city,
+      activity,
+      category,
+    });
+
+    if (availabilityError) {
+      return res.status(409).json({ error: availabilityError });
+    }
        
     const commerceOrder = `BDM_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
      // ✅ Ciudad (viene desde el frontend como "santiago" o "concon")
