@@ -17,6 +17,8 @@ process.on("uncaughtException", (err) => {
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+const CULQI_SECRET_KEY = process.env.CULQI_SECRET_KEY;
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -308,6 +310,44 @@ const subject = eventDate
     return res.status(500).json({ error: "Error creando pago", details });
   }
 });
+
+//Culqi
+
+app.post("/create-culqi-charge", async (req, res) => {
+  try {
+
+    const {
+      amount,
+      email,
+      token
+    } = req.body;
+
+    if (!CULQI_SECRET_KEY) {
+      return res.status(500).json({
+        error: "Falta CULQI_SECRET_KEY"
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Endpoint Culqi funcionando",
+      amount,
+      email,
+      token
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      error: "Error en endpoint Culqi"
+    });
+
+  }
+});
+
+
 
 // Webhook de confirmación (Flow llamará aquí)
 app.post("/confirm-payment", async (req, res) => {
