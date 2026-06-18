@@ -27,9 +27,9 @@ app.get("/", (_req, res) => {
 });
 
 const MAX_CUPOS = {
-  clase: 22,
-  junior: 22,
-  senior: 22,
+  clase: 30,
+  junior: 30,
+  senior: 30,
 };
 
 const normalizeCity = (city) => {
@@ -39,8 +39,8 @@ const normalizeCity = (city) => {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-  if (c === "santiago") return "santiago";
-  if (c === "concon") return "concon";
+  if (c === "lima") return "lima";
+  if (c === "trujillo") return "trujillo";
   return "";
 };
 
@@ -346,6 +346,8 @@ app.post("/create-culqi-charge", async (req, res) => {
 
   }
 });
+
+
 
 
 
